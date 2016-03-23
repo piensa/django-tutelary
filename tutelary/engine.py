@@ -1,7 +1,9 @@
 # coding:utf-8
 
 import re
-from json import loads, dumps, JSONDecodeError
+
+from json import loads, dumps
+
 from string import Template
 import hashlib
 from collections import Sequence
@@ -13,6 +15,15 @@ from .exceptions import (
     PolicyBodyException,
     VariableSubstitutionException)
 
+
+from django.utils import six
+
+# If we are not in Python 3 json.loads returns a ValueError
+# let's alias ValueError as JSONDecodeError as a workaround.
+if six.PY2:
+    JSONDecodeError = ValueError
+else:
+    from json import JSONDecodeError
 
 # ------------------------------------------------------------------------------
 #
@@ -30,6 +41,9 @@ class SimpleSeparated(Sequence):
 
     """
     def __init__(self, s):
+        if six.PY2 and isinstance(s, unicode):
+            s = str(s)
+
         if s is None:
             self.components = []
         elif isinstance(s, str):
@@ -108,13 +122,21 @@ class Action(SimpleSeparated):
         Only registered actions will be returned by such queries.
 
         """
+        # If we are in Python2, let's convert the string into a single action
+        # without using interesting recursiveness.
+        if six.PY2 and isinstance(action, unicode):
+            action = str(action)
+            action = Action(action)
+
+        register = six.get_unbound_function(Action.register)
+
         if isinstance(action, str):
             Action.register(Action(action))
         elif isinstance(action, Action):
             Action.registered.add(action)
         else:
             for a in action:
-                Action.register(a)
+                register(a)
 
 
 class Object(EscapeSeparated):
@@ -142,21 +164,23 @@ class Clause:
     Overlapping patterns are thus potentially ambiguous.)
 
     """
-    def __init__(self, effect=None, act=None, obj=None, dict=None):
+    def __init__(self, effect=None, act=None, obj=None, dic=None):
         """A clause can be created either by giving explicit lists of
         ``Action`` and ``Object`` objects or by giving a dictionary
         with ``effect``, ``action`` and ``object`` keys pulled out of
         the JSON representation of a policy.
 
         """
-        if dict is not None:
-            effect = dict['effect']
-            if isinstance(dict['action'], str):
-                act = [Action(dict['action'])]
+        if dic is not None:
+            if six.PY2 and isinstance(dic['action'], unicode):
+                dic['action'] = str(dic['action'])
+            effect = dic['effect']
+            if isinstance(dic['action'], str):
+                act = [Action(dic['action'])]
             else:
-                act = [Action(a) for a in dict['action']]
+                act = [Action(a) for a in dic['action']]
             obj = [Object(o)
-                   for o in dict['object']] if 'object' in dict else []
+                   for o in dic['object']] if 'object' in dic else []
         if effect not in ['allow', 'deny']:
             raise EffectException(effect)
         if any(a1.match(a2) for a1 in act for a2 in act if a1 != a2):
@@ -183,6 +207,20 @@ class PolicyBody(Sequence):
         try:
             d = loads(strip_comments(Template(json).substitute(variables)))
         except JSONDecodeError as e:
+            # In Python 2.x this is actually a ValueError
+            # we do a simple extraction to get the lineno and colno
+            if six.PY2:
+                import re
+                msg = e.args[0]
+                # If it has a lineno string, this means it was a
+                # JSONDecodeError. The regex parsing below is not very solid
+                # but this is a string that will not likely change in the
+                # future given Python 2.x EOL.
+                if 'line' in msg and 'column' in msg:
+                    e.lineno, e.colno, e.charno = re.findall(r"\d.", msg)
+                else:
+                    raise PolicyBodyException(msg=msg)
+
             raise PolicyBodyException(lineno=e.lineno, colno=e.colno)
         except (KeyError, TypeError, ValueError):
             raise VariableSubstitutionException()
@@ -190,7 +228,7 @@ class PolicyBody(Sequence):
         if 'clause' not in d:
             raise PolicyBodyException(msg="no policy clauses")
         self.clauses = d['clause']
-        self.clauses = [Clause(dict=c) for c in self.clauses]
+        self.clauses = [Clause(dic=c) for c in self.clauses]
         self.nitems = sum([len(c.action) * len(c.object)
                            for c in self.clauses])
         self.nclauses = len(self.clauses)
@@ -206,8 +244,8 @@ class PolicyBody(Sequence):
     def __str__(self):
         def one_clause(c):
             return {'effect': c.effect,
-                    'action': [str(a) for a in c.action],
-                    'object': [str(o) for o in c.object]}
+                    'action': [o.components for o in c.action],
+                    'object': [o.components for o in c.object]}
         cs = [one_clause(c) for c in self.clauses]
         return dumps({'version': self.version, 'clause': cs})
 

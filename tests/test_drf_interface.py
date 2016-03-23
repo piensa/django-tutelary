@@ -1,4 +1,5 @@
 from django.core.exceptions import ImproperlyConfigured
+from django.utils import six
 from rest_framework.exceptions import PermissionDenied
 import rest_framework.generics as generic
 
@@ -23,7 +24,8 @@ def setup(datadir, db):
     pol2 = PolicyFactory.create(name='pol2', file='policy-2.json')
     pol3 = PolicyFactory.create(name='pol3', file='policy-3.json')
 
-    Action.register(['check.list', 'check.create',
+    register = six.get_unbound_function(Action.register)
+    register(['check.list', 'check.create',
                      'check.detail', 'check.delete'])
 
     user1.assign_policies(pol1, pol2)

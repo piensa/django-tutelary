@@ -1,11 +1,16 @@
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
-from collections.abc import Sequence
+from django.utils import six
 
 from .models import check_perms
 from .decorators import action_error_message
 
+if six.PY2:
+    from collections import Sequence
+else:
+    from collections.abc import Sequence
 
-class PermissionRequiredMixin:
+
+class PermissionRequiredMixin(object):
     """Permission checking mixin -- works just like the
     ``PermissionRequiredMixin`` in the default Django authentication
     system.
@@ -123,17 +128,17 @@ class PermissionRequiredMixin:
 
     def dispatch(self, request, *args, **kwargs):
         if self.check_drf():
-            return super().dispatch(request, *args, **kwargs)
+            return super(PermissionRequiredMixin, self).dispatch(request, *args, **kwargs)
         else:
             if not self.has_permission():
                 return self.handle_no_permission()
-            return super().dispatch(request, *args, **kwargs)
+            return super(PermissionRequiredMixin, self).dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
         if hasattr(self, 'filtered_queryset'):
             return self.filtered_queryset
-        elif hasattr(super(), 'get_queryset'):
-            return super().get_queryset()
+        elif hasattr(super(PermissionRequiredMixin, self), 'get_queryset'):
+            return super(PermissionRequiredMixin, self).get_queryset()
         else:
             return [None]
 
@@ -153,4 +158,4 @@ class PermissionRequiredMixin:
 
     def initial(self, request, *args, **kwargs):
         self.check_permissions(request)
-        return super().initial(request, *args, **kwargs)
+        return super(PermissionRequiredMixin, self).initial(request, *args, **kwargs)

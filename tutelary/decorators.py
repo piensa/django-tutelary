@@ -2,13 +2,14 @@ from functools import reduce, wraps
 from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.utils.decorators import available_attrs
+from django.utils import six
 
 from .engine import Object, Action
 from .models import check_perms
 from .exceptions import DecoratorException, PermissionObjectException
 
 
-def permission_required(*actions, obj=None, raise_exception=False):
+def permission_required(*actions, **kwargs):
     """Permission checking decorator -- works like the
     ``permission_required`` decorator in the default Django
     authentication system, except that it takes a sequence of actions
@@ -20,6 +21,9 @@ def permission_required(*actions, obj=None, raise_exception=False):
     are definitely best here...*
 
     """
+    obj = kwargs.get('obj', None)
+    raise_exception = kwargs.get('raise_exception', False)
+
     def checker(user):
         ok = False
         if user.is_authenticated() and check_perms(user, actions, [obj]):
@@ -123,7 +127,9 @@ def permissioned_model(cls, perm_type=None, path_fields=None, actions=None):
             if isinstance(a, tuple):
                 an = a[0]
                 ap = a[1]
-            Action.register(an)
+
+            action_register = six.get_unbound_function(Action.register)
+            action_register(an)
             if isinstance(ap, dict) and 'permissions_object' in ap:
                 po = ap['permissions_object']
                 if po is not None:

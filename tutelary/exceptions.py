@@ -8,7 +8,7 @@ class EffectException(TutelaryException):
 
     """
     def __init__(self, effect):
-        super().__init__("illegal permission effect: '" + effect + "'")
+        super(EffectException, self).__init__("illegal permission effect: '" + effect + "'")
 
 
 class PatternOverlapException(TutelaryException):
@@ -17,7 +17,7 @@ class PatternOverlapException(TutelaryException):
 
     """
     def __init__(self, exc_type):
-        super().__init__(
+        super(PatternOverlapException, self).__init__(
             "overlapping " + exc_type + " patterns in policy clause"
         )
 
@@ -26,9 +26,9 @@ class PolicyBodyException(TutelaryException):
     """Exception raised for miscellaneous errors in JSON policy bodies."""
     def __init__(self, msg=None, lineno=None, colno=None):
         if msg is not None:
-            super().__init__("illegal policy body: " + msg)
+            super(PolicyBodyException, self).__init__("illegal policy body: " + msg)
         else:
-            super().__init__(
+            super(PolicyBodyException, self).__init__(
                 "illegal policy body: " +
                 "line " + str(lineno) + ", column " + str(colno)
             )
@@ -40,7 +40,7 @@ class VariableSubstitutionException(TutelaryException):
 
     """
     def __init__(self):
-        super().__init__("illegal variable substitution in policy body")
+        super(VariableSubstitutionException, self).__init__("illegal variable substitution in policy body")
 
 
 class RoleVariableException(TutelaryException):
@@ -49,7 +49,7 @@ class RoleVariableException(TutelaryException):
 
     """
     def __init__(self, msg):
-        super().__init__("illegal role variables: " + msg)
+        super(RoleVariableException, self).__init__("illegal role variables: " + msg)
 
 
 class DecoratorException(TutelaryException):
@@ -59,7 +59,7 @@ class DecoratorException(TutelaryException):
 
     """
     def __init__(self, decorator, msg):
-        super().__init__(
+        super(DecoratorException, self).__init__(
             "error expanding decorator '" + decorator + "': " + msg
         )
 
@@ -72,7 +72,7 @@ class PermissionObjectException(TutelaryException):
 
     """
     def __init__(self, prop):
-        super().__init__(
+        super(PermissionObjectException, self).__init__(
             "invalid permissions_object property '" + prop +
             "' in permissioned_model"
         )
@@ -85,5 +85,5 @@ class InvalidPermissionObjectException(TutelaryException):
 
     """
     def __init__(self):
-        super().__init__("invalid object passed to django-tutelary " +
+        super(InvalidPermissionObjectException, self).__init__("invalid object passed to django-tutelary " +
                          "backend method")

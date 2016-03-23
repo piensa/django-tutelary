@@ -1,3 +1,4 @@
+from django.utils import six
 from tutelary.models import (assign_user_policies, Role)
 from tutelary.engine import Object, Action
 from tutelary.exceptions import RoleVariableException
@@ -20,7 +21,8 @@ def setup(datadir, db):
     prj_pol = PolicyFactory.create(name='prj', file='project-policy.json')
     deny_pol = PolicyFactory.create(name='prj', file='deny-policy.json')
 
-    Action.register(['party.list', 'party.view', 'parcel.list', 'parcel.view',
+    register = six.get_unbound_function(Action.register)
+    register(['party.list', 'party.view', 'parcel.list', 'parcel.view',
                      'party.edit', 'parcel.edit'])
 
     return (user1, user2, user3, user4, user5,

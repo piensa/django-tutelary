@@ -72,7 +72,9 @@ class WildTree(MutableMapping):
             for st in tree['subtrees']:
                 for tail in _iter_help(st[1]):
                     yield (st[0],) + tail
-        yield from _iter_help(self.root)
+
+        for key in _iter_help(self.root):
+            yield key
 
     def __getitem__(self, key):
         """

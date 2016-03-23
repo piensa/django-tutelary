@@ -24,7 +24,7 @@ class Policy(models.Model):
     """Policy JSON body."""
 
     def __setattr__(self, attrname, val):
-        super().__setattr__(attrname, val)
+        super(Policy, self).__setattr__(attrname, val)
         if attrname == 'body':
             self.refresh()
 
@@ -72,7 +72,7 @@ class RoleManager(models.Manager):
     def create(self, *args, **kwargs):
         pols = kwargs.get('policies', [])
         vs = kwargs.get('variables', {})
-        r = super().create(name=kwargs['name'], variables=vs)
+        r = super(RoleManager, self).create(name=kwargs['name'], variables=vs)
         vns = set().union(*[p.variable_names() for p in pols])
         if not vns.issubset(vs.keys()):
             raise RoleVariableException("missing variable in role definition")
@@ -109,7 +109,7 @@ class Role(models.Model):
 
     def delete(self, *args, **kwargs):
         RolePolicyAssign.objects.filter(role=self).delete()
-        super().delete(*args, **kwargs)
+        super(Role, self).delete(*args, **kwargs)
 
 
 class PolicyInstance(models.Model):

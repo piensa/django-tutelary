@@ -2,6 +2,7 @@ from tutelary.models import assign_user_policies
 from tutelary.engine import Object, Action
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth import get_backends
+from django.utils import six
 import pytest
 from .factories import UserFactory, PolicyFactory
 from .datadir import datadir  # noqa
@@ -21,7 +22,8 @@ def setup(datadir, db):
     prj_pol = PolicyFactory.create(name='prj', file='project-policy.json')
     deny_pol = PolicyFactory.create(name='prj', file='deny-policy.json')
 
-    Action.register(['party.list', 'party.view', 'parcel.list', 'parcel.view',
+    register = six.get_unbound_function(Action.register)
+    register(['party.list', 'party.view', 'parcel.list', 'parcel.view',
                      'party.edit', 'parcel.edit'])
 
     assign_user_policies(None, def_pol)

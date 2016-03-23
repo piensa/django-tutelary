@@ -2,6 +2,7 @@ from tutelary.engine import Action
 from tutelary.decorators import permissioned_model
 from tutelary.mixins import PermissionRequiredMixin
 from django.db import models
+from django.utils import six
 import django.views.generic as generic
 import pytest
 from .factories import UserFactory, PolicyFactory
@@ -18,7 +19,8 @@ def setup(datadir, db):
     pol2 = PolicyFactory.create(name='pol2', file='policy-2.json')
     pol3 = PolicyFactory.create(name='pol3', file='policy-3.json')
 
-    Action.register(['check.list', 'check.create',
+    register = six.get_unbound_function(Action.register)
+    register(['check.list', 'check.create',
                      'check.detail', 'check.delete'])
 
     user1.assign_policies(pol1, pol2)
